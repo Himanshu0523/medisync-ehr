@@ -1,0 +1,33 @@
+services:
+  mongo:
+      image: mongo:7
+      restart: unless-stopped
+      ports: ["27018:27017"]
+      volumes: [mongo_data:/data/db]
+  redis:
+      image: redis:7-alpine
+      restart: unless-stopped
+      ports: ["6380:6379"]
+  api:
+      build: .
+      restart: unless-stopped
+      env_file: .env.docker
+      ports: ["5001:5000"]
+      depends_on: [mongo, redis]
+      volumes:
+        - ./uploads:/app/uploads
+        - ./logs:/app/logs
+  notification-worker:
+      build: .
+      restart: unless-stopped
+      env_file: .env.docker
+      command: ["node", "src/jobs/workers/notification.worker.js"]
+      depends_on: [mongo, redis]
+  reminder-worker:
+      build: .
+      restart: unless-stopped
+      env_file: .env.docker
+      command: ["node", "src/jobs/workers/reminder.worker.js"]
+      depends_on: [mongo, redis]
+volumes:
+    mongo_data:

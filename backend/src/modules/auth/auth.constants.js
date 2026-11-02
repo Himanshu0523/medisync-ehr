@@ -1,0 +1,83 @@
+export const ROLES = Object.freeze({
+    PATIENT: 'patient',
+    DOCTOR: 'doctor',
+    RECEPTIONIST: 'receptionist',
+    HOSPITAL_ADMIN: 'hospital_admin',
+    SUPER_ADMIN: 'super_admin',
+    ADMIN: 'admin', // Backward-compatibility alias
+});
+
+export const PERMISSIONS = Object.freeze({
+    PATIENT_READ_OWN: 'patient:read_own',
+    PATIENT_CREATE: 'patient:create',
+    PATIENT_READ_HOSPITAL: 'patient:read_hospital',
+    APPOINTMENT_CREATE: 'appointment:create',
+    APPOINTMENT_READ_OWN: 'appointment:read_own',
+    APPOINTMENT_READ_HOSPITAL: 'appointment:read_hospital',
+    APPOINTMENT_MANAGE: 'appointment:manage',
+    VISIT_CREATE: 'visit:create',
+    VISIT_READ_AUTHORIZED: 'visit:read_authorized',
+    DIAGNOSIS_CREATE: 'diagnosis:create',
+    PRESCRIPTION_CREATE: 'prescription:create',
+    TEST_REQUEST_CREATE: 'test_request:create',
+    STAFF_CREATE: 'staff:create',
+    STAFF_READ: 'staff:read',
+    STAFF_UPDATE: 'staff:update',
+    HOSPITAL_CREATE: 'hospital:create',
+    HOSPITAL_MANAGE: 'hospital:manage',
+    AUDIT_READ: 'audit:read',
+    PLATFORM_MANAGE: 'platform:manage',
+});
+
+export const ROLE_PERMISSIONS = Object.freeze({
+    [ROLES.PATIENT]: [
+        PERMISSIONS.PATIENT_READ_OWN,
+        PERMISSIONS.APPOINTMENT_CREATE,
+        PERMISSIONS.APPOINTMENT_READ_OWN,
+    ],
+    [ROLES.DOCTOR]: [
+        PERMISSIONS.PATIENT_READ_OWN,
+        PERMISSIONS.VISIT_CREATE,
+        PERMISSIONS.VISIT_READ_AUTHORIZED,
+        PERMISSIONS.DIAGNOSIS_CREATE,
+        PERMISSIONS.PRESCRIPTION_CREATE,
+        PERMISSIONS.TEST_REQUEST_CREATE,
+    ],
+    [ROLES.RECEPTIONIST]: [
+        PERMISSIONS.PATIENT_CREATE,
+        PERMISSIONS.PATIENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_CREATE,
+        PERMISSIONS.APPOINTMENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_MANAGE,
+    ],
+    [ROLES.HOSPITAL_ADMIN]: [
+        PERMISSIONS.PATIENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_MANAGE,
+        PERMISSIONS.STAFF_CREATE,
+        PERMISSIONS.STAFF_READ,
+        PERMISSIONS.STAFF_UPDATE,
+        PERMISSIONS.AUDIT_READ,
+        PERMISSIONS.HOSPITAL_MANAGE,
+    ],
+    [ROLES.SUPER_ADMIN]: [
+        PERMISSIONS.HOSPITAL_CREATE,
+        PERMISSIONS.HOSPITAL_MANAGE,
+        PERMISSIONS.STAFF_CREATE,
+        PERMISSIONS.STAFF_READ,
+        PERMISSIONS.STAFF_UPDATE,
+        PERMISSIONS.AUDIT_READ,
+        PERMISSIONS.PLATFORM_MANAGE,
+    ],
+    // Legacy 'admin' receives hospital_admin permissions
+    [ROLES.ADMIN]: [
+        PERMISSIONS.PATIENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_READ_HOSPITAL,
+        PERMISSIONS.APPOINTMENT_MANAGE,
+        PERMISSIONS.STAFF_CREATE,
+        PERMISSIONS.STAFF_READ,
+        PERMISSIONS.STAFF_UPDATE,
+        PERMISSIONS.AUDIT_READ,
+        PERMISSIONS.HOSPITAL_MANAGE,
+    ],
+});

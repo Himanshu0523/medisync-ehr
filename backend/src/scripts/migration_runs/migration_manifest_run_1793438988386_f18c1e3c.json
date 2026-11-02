@@ -1,0 +1,38 @@
+{
+  "runId": "run_1793438988386_f18c1e3c",
+  "executedAt": "2026-10-31T09:29:48.401Z",
+  "integrityChecksum": "51d39732db7f1930e903c87ebf38218d23077fc0141472ce349fc3458e41a586",
+  "payload": {
+    "status": "completed",
+    "plannedBookings": [
+      {
+        "id": "6ae5b50c5df1eed781e74a72",
+        "previousState": "null",
+        "previousHospital": null,
+        "appliedHospital": "6ae5b50c5df1eed781e74a69"
+      },
+      {
+        "id": "6ae5b50c5df1eed781e74a73",
+        "previousState": "null",
+        "previousHospital": null,
+        "appliedHospital": "6ae5b50c5df1eed781e74a69"
+      }
+    ],
+    "plannedVisits": [],
+    "modifiedBookings": [
+      {
+        "id": "6ae5b50c5df1eed781e74a72",
+        "previousState": "null",
+        "previousHospital": null,
+        "appliedHospital": "6ae5b50c5df1eed781e74a69"
+      },
+      {
+        "id": "6ae5b50c5df1eed781e74a73",
+        "previousState": "null",
+        "previousHospital": null,
+        "appliedHospital": "6ae5b50c5df1eed781e74a69"
+      }
+    ],
+    "modifiedVisits": []
+  }
+}

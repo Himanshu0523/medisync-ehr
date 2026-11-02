@@ -1,0 +1,582 @@
+{
+  "info": {
+    "name": "MediSync API Test Suite",
+    "description": "End-to-end tests: auth, RBAC, CRUD, validation, security.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.environment.set('suffix', Math.floor(100000 + Math.random() * 900000));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" }
+  ],
+  "item": [
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Admin User\",\"email\":\"admin{{suffix}}@medisync.com\",\"mobile\":\"9000{{suffix}}\",\"password\":\"Admin@123\",\"role\":\"admin\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "pm.test('Response < 800ms', () => pm.expect(pm.response.responseTime).to.be.below(800));",
+              "const res = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(res.success).to.be.true);",
+              "pm.test('Has JWT token', () => pm.expect(res.data.token).to.be.a('string').with.length.greaterThan(20));",
+              "pm.test('role=admin', () => pm.expect(res.data.user.role).to.eql('admin'));",
+              "pm.test('Password not returned', () => pm.expect(res.data.user).to.not.have.property('password'));",
+              "pm.environment.set('adminToken', res.data.token);",
+              "pm.environment.set('adminId', res.data.user._id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin{{suffix}}@medisync.com\",\"password\":\"Admin@123\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const res = pm.response.json();",
+              "pm.test('token returned', () => pm.expect(res.data.token).to.be.a('string'));",
+              "pm.environment.set('adminToken', res.data.token);"
+            ]}
+          }]
+        },
+        {
+          "name": "Register Patient",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Patient One\",\"email\":\"patient{{suffix}}@medisync.com\",\"mobile\":\"8000{{suffix}}\",\"password\":\"Patient@123\",\"role\":\"patient\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const res = pm.response.json();",
+              "pm.test('role=patient', () => pm.expect(res.data.user.role).to.eql('patient'));",
+              "pm.environment.set('patientToken', res.data.token);",
+              "pm.environment.set('patientId', res.data.user._id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Login Patient",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": { "mode": "raw", "raw": "{\"email\":\"patient{{suffix}}@medisync.com\",\"password\":\"Patient@123\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.environment.set('patientToken', pm.response.json().data.token);"
+          ]}}]
+        },
+        {
+          "name": "Register Receptionist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": { "mode": "raw", "raw": "{\"name\":\"Reception Desk\",\"email\":\"recep{{suffix}}@medisync.com\",\"mobile\":\"7000{{suffix}}\",\"password\":\"Recep@123\",\"role\":\"receptionist\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.environment.set('receptionistToken', pm.response.json().data.token);",
+            "pm.environment.set('receptionistId', pm.response.json().data.user._id);"
+          ]}}]
+        },
+        {
+          "name": "Login Receptionist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": { "mode": "raw", "raw": "{\"email\":\"recep{{suffix}}@medisync.com\",\"password\":\"Recep@123\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.environment.set('receptionistToken', pm.response.json().data.token);"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "02 - Users (Admin)",
+      "item": [
+        {
+          "name": "Get All Users (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["users"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('users is array', () => pm.expect(res.data.users).to.be.an('array'));",
+            "pm.test('pagination present', () => { pm.expect(res.data).to.have.property('total'); pm.expect(res.data).to.have.property('pages'); });",
+            "pm.test('No password fields', () => res.data.users.forEach(u => pm.expect(u).to.not.have.property('password')));"
+          ]}}]
+        },
+        {
+          "name": "Update Self (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/users/{{adminId}}", "host": ["{{baseUrl}}"], "path": ["users","{{adminId}}"] },
+            "body": { "mode": "raw", "raw": "{\"name\":\"Admin Updated\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('Name updated', () => pm.expect(pm.response.json().data.name).to.eql('Admin Updated'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "03 - Doctors",
+      "item": [
+        {
+          "name": "Create Doctor (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/doctors", "host": ["{{baseUrl}}"], "path": ["doctors"] },
+            "body": { "mode": "raw", "raw": "{\"name\":\"Dr. Smith\",\"email\":\"doctor{{suffix}}@medisync.com\",\"mobile\":\"6000{{suffix}}\",\"specialization\":\"Cardiology\",\"timing\":\"Mon-Fri 09:00-17:00\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json();",
+            "pm.test('specialization set', () => pm.expect(res.data.specialization).to.eql('Cardiology'));",
+            "pm.environment.set('doctorId', res.data._id);"
+          ]}}]
+        },
+        {
+          "name": "Get All Doctors",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/doctors", "host": ["{{baseUrl}}"], "path": ["doctors"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('returns array', () => pm.expect(pm.response.json().data.doctors).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "Get Doctor By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/doctors/{{doctorId}}", "host": ["{{baseUrl}}"], "path": ["doctors","{{doctorId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('correct doctor', () => pm.expect(pm.response.json().data._id).to.eql(pm.environment.get('doctorId')));"
+          ]}}]
+        },
+        {
+          "name": "Update Doctor (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/doctors/{{doctorId}}", "host": ["{{baseUrl}}"], "path": ["doctors","{{doctorId}}"] },
+            "body": { "mode": "raw", "raw": "{\"timing\":\"Mon-Sat 10:00-18:00\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('timing updated', () => pm.expect(pm.response.json().data.timing).to.include('Sat'));"
+          ]}}]
+        },
+        {
+          "name": "Duplicate Doctor (expect 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/doctors", "host": ["{{baseUrl}}"], "path": ["doctors"] },
+            "body": { "mode": "raw", "raw": "{\"name\":\"Dr. Duplicate\",\"email\":\"doctor{{suffix}}@medisync.com\",\"mobile\":\"5000{{suffix}}\",\"specialization\":\"Neuro\",\"timing\":\"X\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('Duplicate message', () => pm.expect(pm.response.json().message).to.match(/already exists/i));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "04 - Bookings",
+      "item": [
+        {
+          "name": "Patient - Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] },
+            "body": { "mode": "raw", "raw": "{\"doctor\":\"{{doctorId}}\",\"date\":\"2026-01-15\",\"time\":\"10:30\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json();",
+            "pm.test('status=pending', () => pm.expect(res.data.status).to.eql('pending'));",
+            "pm.test('patient = self', () => pm.expect(res.data.patient).to.eql(pm.environment.get('patientId')));",
+            "pm.environment.set('bookingId', res.data._id);"
+          ]}}]
+        },
+        {
+          "name": "Patient - Get Own Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('array returned', () => pm.expect(res.data.bookings).to.be.an('array'));",
+            "pm.test('all bookings belong to self', () => res.data.bookings.forEach(b => pm.expect(b.patient._id).to.eql(pm.environment.get('patientId'))));"
+          ]}}]
+        },
+        {
+          "name": "Receptionist - Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{receptionistToken}}" }],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('array returned', () => pm.expect(pm.response.json().data.bookings).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "Receptionist - Confirm Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{receptionistToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings/{{bookingId}}/status", "host": ["{{baseUrl}}"], "path": ["bookings","{{bookingId}}","status"] },
+            "body": { "mode": "raw", "raw": "{\"status\":\"confirmed\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('status=confirmed', () => pm.expect(pm.response.json().data.status).to.eql('confirmed'));"
+          ]}}]
+        },
+        {
+          "name": "Patient - Create 2nd Booking (for cancel)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] },
+            "body": { "mode": "raw", "raw": "{\"doctor\":\"{{doctorId}}\",\"date\":\"2026-01-16\",\"time\":\"11:00\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.environment.set('bookingId2', pm.response.json().data._id);"
+          ]}}]
+        },
+        {
+          "name": "Patient - Cancel Own Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings/{{bookingId2}}/status", "host": ["{{baseUrl}}"], "path": ["bookings","{{bookingId2}}","status"] },
+            "body": { "mode": "raw", "raw": "{\"status\":\"cancelled\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('status=cancelled', () => pm.expect(pm.response.json().data.status).to.eql('cancelled'));"
+          ]}}]
+        },
+        {
+          "name": "Duplicate Booking Slot (expect 409/11000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] },
+            "body": { "mode": "raw", "raw": "{\"doctor\":\"{{doctorId}}\",\"date\":\"2026-01-15\",\"time\":\"10:30\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('rejects duplicate active slot', () => pm.expect([400,409,500]).to.include(pm.response.code));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "05 - Visits",
+      "item": [
+        {
+          "name": "Receptionist - Create Visit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{receptionistToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/visits", "host": ["{{baseUrl}}"], "path": ["visits"] },
+            "body": { "mode": "raw", "raw": "{\"booking\":\"{{bookingId}}\",\"mobile\":\"8000{{suffix}}\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json();",
+            "pm.test('visit has booking', () => pm.expect(res.data.booking).to.eql(pm.environment.get('bookingId')));",
+            "pm.environment.set('visitId', res.data._id);"
+          ]}}]
+        },
+        {
+          "name": "Receptionist - Get Visits",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{receptionistToken}}" }],
+            "url": { "raw": "{{baseUrl}}/visits", "host": ["{{baseUrl}}"], "path": ["visits"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('visits is array', () => pm.expect(pm.response.json().data.visits).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "Patient - Get Own Visits",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/visits", "host": ["{{baseUrl}}"], "path": ["visits"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('only own visits', () => res.data.visits.forEach(v => pm.expect(v.patient._id).to.eql(pm.environment.get('patientId'))));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "06 - Visit Diseases",
+      "item": [
+        {
+          "name": "Receptionist - Create VisitDisease",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{receptionistToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/visit-diseases", "host": ["{{baseUrl}}"], "path": ["visit-diseases"] },
+            "body": { "mode": "raw", "raw": "{\"visit\":\"{{visitId}}\",\"disease\":\"Hypertension\",\"prescription\":\"Amlodipine 5mg daily\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json();",
+            "pm.test('disease saved', () => pm.expect(res.data.disease).to.eql('Hypertension'));",
+            "pm.environment.set('visitDiseaseId', res.data._id);"
+          ]}}]
+        },
+        {
+          "name": "Get VisitDiseases",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{receptionistToken}}" }],
+            "url": { "raw": "{{baseUrl}}/visit-diseases?visit={{visitId}}", "host": ["{{baseUrl}}"], "path": ["visit-diseases"], "query": [{"key":"visit","value":"{{visitId}}"}] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('records returned', () => pm.expect(pm.response.json().data.records).to.be.an('array'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "07 - Tests",
+      "item": [
+        {
+          "name": "Receptionist - Create Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{receptionistToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/tests", "host": ["{{baseUrl}}"], "path": ["tests"] },
+            "body": { "mode": "raw", "raw": "{\"visit\":\"{{visitId}}\",\"visitDisease\":\"{{visitDiseaseId}}\",\"testName\":\"Blood Pressure\",\"testDate\":\"2026-01-15\",\"report\":\"140/90 mmHg\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json();",
+            "pm.test('testName correct', () => pm.expect(res.data.testName).to.eql('Blood Pressure'));",
+            "pm.environment.set('testId', res.data._id);"
+          ]}}]
+        },
+        {
+          "name": "Receptionist - Get Tests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{receptionistToken}}" }],
+            "url": { "raw": "{{baseUrl}}/tests", "host": ["{{baseUrl}}"], "path": ["tests"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('tests array', () => pm.expect(pm.response.json().data.tests).to.be.an('array'));"
+          ]}}]
+        },
+        {
+          "name": "Patient - Get Own Tests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/tests", "host": ["{{baseUrl}}"], "path": ["tests"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json();",
+            "pm.test('only own tests', () => res.data.tests.forEach(t => pm.expect(t.visit.patient.toString()).to.eql(pm.environment.get('patientId'))));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "08 - Negative & Security",
+      "item": [
+        {
+          "name": "No Token - 401",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+            "pm.test('auth message', () => pm.expect(pm.response.json().message).to.match(/authenticated|log ?in/i));"
+          ]}}]
+        },
+        {
+          "name": "Patient Tries Admin Endpoint - 403",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+            "pm.test('permission message', () => pm.expect(pm.response.json().message).to.match(/permission|forbidden|denied/i));"
+          ]}}]
+        },
+        {
+          "name": "Patient Tries Create Doctor - 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/doctors", "host": ["{{baseUrl}}"], "path": ["doctors"] },
+            "body": { "mode": "raw", "raw": "{\"name\":\"Hacked\",\"email\":\"h@h.com\",\"mobile\":\"9999999999\",\"specialization\":\"X\",\"timing\":\"X\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}]
+        },
+        {
+          "name": "Invalid Doctor Id - 404/400",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{patientToken}}" }],
+            "url": { "raw": "{{baseUrl}}/doctors/000000000000000000000000", "host": ["{{baseUrl}}"], "path": ["doctors","000000000000000000000000"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404 Not Found', () => pm.response.to.have.status(404));",
+            "pm.test('not found message', () => pm.expect(pm.response.json().message).to.match(/not found/i));"
+          ]}}]
+        },
+        {
+          "name": "Validation - Missing Booking Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{patientToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] },
+            "body": { "mode": "raw", "raw": "{\"date\":\"2026-01-20\",\"time\":\"12:00\"}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400/422 validation error', () => pm.expect([400,422]).to.include(pm.response.code));",
+            "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
+          ]}}]
+        },
+        {
+          "name": "Invalid JWT - 401",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer not.a.valid.token" }],
+            "url": { "raw": "{{baseUrl}}/bookings", "host": ["{{baseUrl}}"], "path": ["bookings"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+            "pm.test('invalid/expired message', () => pm.expect(pm.response.json().message).to.match(/invalid|expired/i));"
+          ]}}]
+        }
+      ]
+    }
+  ]
+}
