@@ -236,7 +236,7 @@ export const requireClinicalRecordAccess = async ({ visitId, user, hospitalId })
       if (!hasConsent) {
         throw new ApiError(
           403,
-          'Cross-hospital access denied: You cannot access clinical records from another hospital without active patient consent'
+          'Cross-hospital access denied: You cannot access clinical records from a hospital facility you are no longer affiliated with'
         );
       }
     }
